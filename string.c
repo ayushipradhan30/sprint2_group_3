@@ -13,7 +13,7 @@ void str_trim_lf (char* arr, int length)
             break;
         }
     }
-}
+}  
 
 //to print > symbol for initiating sending of message in the screen
 void str_overwrite_stdout() 
