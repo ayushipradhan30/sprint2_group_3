@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include "/home/ayushi/Cprog/sprint2/inc/proto.h"  
 
-//assigning the password to admin for login
+//assigning the pre-defined password to admin for login
 char pass[20] = MEET_PASSWORD;
 
 int login_menu()
@@ -84,7 +84,7 @@ int login()
 				    	getchar();
 				    	exit(EXIT_FAILURE);
 					}
-					printf("\n\t\t\t->>> Wrong password .Login attempt remaining %d", attempt);
+					printf("\n\t\t\t->>> Wrong password .login attempt remaining %d", attempt);
 		       	 	printf("\n\n");
 		        	getchar();
 		        	goto label2;
