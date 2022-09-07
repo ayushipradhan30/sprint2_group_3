@@ -1,9 +1,8 @@
 /*creating TCP socket for client side and using various system calls like send(), connect(),  close() to connect to the server */
  
 //including header files for this particular code
-#include "/home/ayushi/Cprog/sprint2/inc/proto.h"
-#include "/home/ayushi/Cprog/sprint2/inc/client.h"
-#include "/home/ayushi/Cprog/sprint2/inc/strings.h"
+#include <../inc/proto.h>
+#include <../inc/client.h>
 
 // Global variables
 volatile sig_atomic_t flag = 0;//flag for client availability
@@ -21,14 +20,15 @@ void catch_ctrl_c_and_exit(int sig)
 /*Functionn for receiving message*/
 void recv_msg_handler() 
 {
-    char receiveMessage[LENGTH_SEND] = {};//receive message
+    char receiveMessage[LENGTH_SEND] = {0};//receive message
     while (1) {
         int receive = recv(sockfd, receiveMessage, LENGTH_SEND, 0);//receive function returns integer value
         
         /*checking if message received successfully*/
         if (receive > 0) {
             printf("\r%s\n", receiveMessage);
-            str_overwrite_stdout();
+            printf("\r%s", "> ");
+            fflush(stdout);
         } else if (receive == 0) {
             break;
         } else { 
@@ -40,17 +40,19 @@ void recv_msg_handler()
 /*Function for sending message*/
 void send_msg_handler() 
 {
-    char message[LENGTH_MSG] = {};
+    char message[LENGTH_MSG] = {0};
     
     /*checking if message sent successfully*/
     while (1) 
     {
-        str_overwrite_stdout();
+       printf("\r%s", "> ");
+       fflush(stdout);
         while (fgets(message, LENGTH_MSG, stdin) != NULL) 
         {
             str_trim_lf(message, LENGTH_MSG);
             if (strlen(message) == 0) {
-                str_overwrite_stdout();
+                printf("\r%s", "> ");
+                fflush(stdout);
             } else {
                 break;
             }
@@ -60,7 +62,7 @@ void send_msg_handler()
             break;
         }//end of if
     }//end of while
-    catch_ctrl_c_and_exit(SEND_SUCCESS);
+    catch_ctrl_c_and_exit(EXIT_SUCCESS);
 }
 
 /* Main function for client*/
@@ -86,7 +88,7 @@ int main()
 		{
 		    str_trim_lf(username, LENGTH_NAME);
 		}
-		if (strlen(username) < CHAR_LENGTH || strlen(username) >= LENGTH_NAME-1) 
+		if (strlen(username) < MINIMUM_USERNAME || strlen(username) >= LENGTH_NAME-1) 
 		{
 		    printf("\nName must be more than one and less than thirty characters.\n");
 		    exit(EXIT_FAILURE);
@@ -143,6 +145,7 @@ int main()
 		if (pthread_create(&send_msg_thread, NULL, (void *) send_msg_handler, NULL) != 0) 
 		{
 		    perror("Create pthread error!\n");
+		   	pthread_exit(&send_msg_thread);
 		    exit(EXIT_FAILURE);
 		}
 		
@@ -150,6 +153,7 @@ int main()
 		if (pthread_create(&recv_msg_thread, NULL, (void *) recv_msg_handler, NULL) != 0) 
 		{
 		    perror("Create pthread error!\n");
+		    pthread_exit(&recv_msg_thread);
 		    exit(EXIT_FAILURE);
 		}
 		
@@ -160,11 +164,9 @@ int main()
 		    {
 		        printf("\nBye\n");
 		        printf("Successfully Logout\n\n");
-		        
 		        break;
 		    }
 		}//end of while
-		
 		close(sockfd);//closing socket 
 	}//end of else
 	return 0;

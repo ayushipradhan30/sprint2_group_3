@@ -12,10 +12,30 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 
-#include "/home/ayushi/Cprog/sprint2/inc/proto.h"
-#include "/home/ayushi/Cprog/sprint2/inc/server.h"
+#include <../inc/proto.h>
+#include <../inc/server.h>
 
+//structure for client node, its a doubly linked list
+typedef struct ClientNode 
+{
+    int data;//store data of socket
+    struct ClientNode* prev;//link to prevoius node
+    struct ClientNode* link;//link to next node
+    char ip[IP_ADDRESS];//ip address
+    char name[LENGTH_NAME];//username
+} ClientList;
 
+//node creation for client list
+ClientList *newNode(int sockfd, char* ip) 
+{
+    ClientList *np = (ClientList *)malloc( sizeof(ClientList) );//create new node np
+    np->data = sockfd;//store socket information
+    np->prev = NULL;
+    np->link = NULL;
+    strncpy(np->ip, ip, IP_ADDRESS);//copies the IP to the node
+    strncpy(np->name, "NULL", LENGTH_NAME);//copies name to the node
+    return np;
+}
 // Global variables
 int server_sockfd = 0, client_sockfd = 0;
 ClientList *root, *now;
@@ -59,16 +79,16 @@ void send_to_all_clients(ClientList *np, char tmp_buffer[])
 void client_handler(void *p_client) 
 {
     int leave_flag = 0;
-    char username[LENGTH_NAME] = {};
-    char recv_buffer[LENGTH_MSG] = {};
-    char send_buffer[LENGTH_SEND] = {};
+    char username[LENGTH_NAME] = {0};
+    char recv_buffer[LENGTH_MSG] = {0};
+    char send_buffer[LENGTH_SEND] = {0};
     ClientList *np = (ClientList *)p_client;
 
     //Validating Name
     
     /*else and else if comes after the previous closing brace and not on
 	 *the next line.*/
-    if (recv(np->data, username, LENGTH_NAME, 0) <= 0 || strlen(username) < CHAR_LENGTH || strlen(username) >= LENGTH_NAME-1) 
+    if (recv(np->data, username, LENGTH_NAME, 0) <= 0 || strlen(username) < MINIMUM_USERNAME || strlen(username) >= LENGTH_NAME-1) 
     {
         printf("%s didn't input name.\n", np->ip);
         leave_flag = 1;
@@ -208,6 +228,7 @@ int main()
   		if (pthread_create(&id, NULL, (void *)client_handler, (void *)c) != 0) 
   		{
             perror("Create pthread error!\n");
+            pthread_exit(&id);
             exit(EXIT_FAILURE);
         }
     }

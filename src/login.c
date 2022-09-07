@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "/home/ayushi/Cprog/sprint2/inc/proto.h"  
+#include <../inc/proto.h>
 
 //assigning the pre-defined password to admin for login
 char pass[20] = MEET_PASSWORD;
@@ -12,9 +12,9 @@ char pass[20] = MEET_PASSWORD;
 int login_menu()
 {
 	int choice;//variable to get choice from the user
-    	system("clear");
+    system("clear");
 
-    	//Label for client
+    //Label for client
    	client:
 		//display admin panel.
     	printf("\n\t\t\t****************\n");
@@ -91,7 +91,7 @@ int login()
         		}//end of if
         		else
         		{
-            		return login_menu;//redirect to the main account:
+            		return login_menu();//redirect to the main account:
         		}
     	}//end of else
 }
