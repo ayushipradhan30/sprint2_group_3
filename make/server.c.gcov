@@ -1,0 +1,219 @@
+        -:    0:Source:server.c
+        -:    0:Graph:a-server.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
+        -:    1:/*creating TCP socket for server side and using various system calls like bind(), listen(), recv(), send(), close() to accept incoming connections from the client side and communicating with multiple clients by using TCP protocol. */
+        -:    2: 
+        -:    3://including header files for this particular code
+        -:    4:#include <stdio.h>
+        -:    5:#include <stdlib.h>
+        -:    6:#include <string.h>
+        -:    7:#include <signal.h>
+        -:    8:#include <unistd.h>
+        -:    9:#include <sys/types.h>
+        -:   10:#include <sys/socket.h>
+        -:   11:#include <netinet/in.h>
+        -:   12:#include <arpa/inet.h>
+        -:   13:#include <pthread.h>
+        -:   14:
+        -:   15:#include "/home/ayushi/Cprog/sprint2/inc/proto.h"
+        -:   16:#include "/home/ayushi/Cprog/sprint2/inc/server.h"
+        -:   17:
+        -:   18:
+        -:   19:// Global variables
+        -:   20:int server_sockfd = 0, client_sockfd = 0;
+        -:   21:ClientList *root, *now;
+        -:   22:
+        -:   23:/*Function names are lower_case. Opening braces on the next line*/
+        -:   24:
+        -:   25://Exit function
+    #####:   26:void catch_ctrl_c_and_exit(int sig) 
+        -:   27:{
+        -:   28:    ClientList *tmp;
+        -:   29:    //checks if list is empty
+    #####:   30:    while (root != NULL) {
+    #####:   31:        printf("\nClose socketfd: %d\n", root->data);
+    #####:   32:        close(root->data); // close all socket include server_sockfd
+    #####:   33:        tmp = root;
+    #####:   34:        root = root->link;
+    #####:   35:        free(tmp);
+        -:   36:    }
+    #####:   37:    printf("Bye\n");
+    #####:   38:    exit(EXIT_SUCCESS);
+        -:   39:}
+        -:   40:
+        -:   41://sending message to all clients
+    #####:   42:void send_to_all_clients(ClientList *np, char tmp_buffer[]) 
+        -:   43:{
+    #####:   44:    ClientList *tmp = root->link;
+        -:   45:    //checks if list is empty
+    #####:   46:    while (tmp != NULL) 
+        -:   47:    {
+        -:   48:    	// all clients except itself
+    #####:   49:        if (np->data != tmp->data) 
+        -:   50:        { 
+    #####:   51:            printf("Send to sockfd %d: \"%s\" \n", tmp->data, tmp_buffer);
+    #####:   52:            send(tmp->data, tmp_buffer, LENGTH_SEND, 0);
+        -:   53:        }
+    #####:   54:        tmp = tmp->link;
+        -:   55:    }
+    #####:   56:}
+        -:   57:
+        -:   58://handling client data
+    #####:   59:void client_handler(void *p_client) 
+        -:   60:{
+    #####:   61:    int leave_flag = 0;
+    #####:   62:    char username[LENGTH_NAME] = {};
+    #####:   63:    char recv_buffer[LENGTH_MSG] = {};
+    #####:   64:    char send_buffer[LENGTH_SEND] = {};
+    #####:   65:    ClientList *np = (ClientList *)p_client;
+        -:   66:
+        -:   67:    //Validating Name
+        -:   68:    
+        -:   69:    /*else and else if comes after the previous closing brace and not on
+        -:   70:	 *the next line.*/
+    #####:   71:    if (recv(np->data, username, LENGTH_NAME, 0) <= 0 || strlen(username) < CHAR_LENGTH || strlen(username) >= LENGTH_NAME-1) 
+        -:   72:    {
+    #####:   73:        printf("%s didn't input name.\n", np->ip);
+    #####:   74:        leave_flag = 1;
+        -:   75:    } else {
+    #####:   76:        strncpy(np->name, username, LENGTH_NAME);
+    #####:   77:        printf("%s(%s)(%d) join the chatroom.\n", np->name, np->ip, np->data);
+    #####:   78:        sprintf(send_buffer, "%s(%s) join the chatroom.", np->name, np->ip);
+    #####:   79:        send_to_all_clients(np, send_buffer);
+        -:   80:    }
+        -:   81:
+        -:   82:    // Conversation
+        -:   83:    while (1) 
+    #####:   84:    {
+    #####:   85:        if (leave_flag) 
+        -:   86:        {
+    #####:   87:            break;
+        -:   88:        }
+    #####:   89:        int receive = recv(np->data, recv_buffer, LENGTH_MSG, 0);
+        -:   90:        
+    #####:   91:        if (receive > 0) 
+        -:   92:        {
+    #####:   93:            if (strlen(recv_buffer) == 0) 
+        -:   94:            {
+    #####:   95:                continue;
+        -:   96:            }
+    #####:   97:            sprintf(send_buffer, "%s：%s from %s", np->name, recv_buffer, np->ip);
+    #####:   98:        } else if (receive == 0 || strcmp(recv_buffer, "exit") == 0) 
+        -:   99:        {
+    #####:  100:            printf("%s(%s)(%d) leave the chatroom.\n", np->name, np->ip, np->data);
+    #####:  101:            sprintf(send_buffer, "%s(%s) leave the chatroom.", np->name, np->ip);
+    #####:  102:            leave_flag = 1;
+        -:  103:        } else 
+        -:  104:        {
+    #####:  105:            perror("Fatal Error: -1\n");
+    #####:  106:            leave_flag = 1;
+        -:  107:        }
+    #####:  108:        send_to_all_clients(np, send_buffer);
+        -:  109:    }
+        -:  110:
+        -:  111:    // Remove Node
+    #####:  112:    close(np->data);
+    #####:  113:    if (np == now)// remove an edge node 
+        -:  114:    { 
+    #####:  115:        now = np->prev;
+    #####:  116:        now->link = NULL;
+        -:  117:    } else // remove a middle node
+        -:  118:    {
+    #####:  119:        np->prev->link = np->link;
+    #####:  120:        np->link->prev = np->prev;
+        -:  121:    }
+    #####:  122:    free(np);
+    #####:  123:}
+        -:  124:
+        -:  125:/* Main function to create a TCP socket , and also creating system calls like bind() and listen() and accept connection from the client*/
+    #####:  126:int main()
+        -:  127:{
+        -:  128:    char username[LENGTH_NAME]; //username
+        -:  129:    char password[PASSWORD_LENGTH]; //password
+        -:  130:    pthread_t id; //creating and defining thread id
+        -:  131: 
+        -:  132:    /*Signal to invoke the exit function*/
+    #####:  133:    signal(SIGINT, catch_ctrl_c_and_exit); //sigint to stop the current process and return to its main loop 
+        -:  134: 
+        -:  135: 	/*Server Login */
+    #####:  136:    printf("Enter your username: "); 
+    #####:  137:    scanf("%s",username); 
+        -:  138: 
+    #####:  139:    printf("Enter your password: "); 
+    #####:  140:    scanf("%s",password); 
+        -:  141: 
+    #####:  142:    if(strcmp(username,USERNAME_SERVER)==0){ 
+    #####:  143:    	if(strcmp(password,PASSWORD_SERVER)==0){ 
+        -:  144: 
+    #####:  145:        	printf("\nWelcome.Login Success!\n"); 
+        -:  146:        }else{ 
+    #####:  147:    		perror("\nwrong password\n");
+    #####:  148:    		exit(EXIT_FAILURE); 
+        -:  149:		} 
+        -:  150:    }else{ 
+    #####:  151:    	perror("\nUser doesn't exist\n"); 
+    #####:  152:    	exit(EXIT_FAILURE);
+        -:  153:	} 
+        -:  154: 
+        -:  155: 	//Creating socket for server side
+    #####:  156:    server_sockfd = socket(AF_INET , SOCK_STREAM , 0);
+        -:  157:    
+        -:  158:    //Checking condition for socket creation
+    #####:  159:    if (server_sockfd < 0)   
+        -:  160:    {
+    #####:  161:        perror("Fail to create a socket.");  //error condition
+    #####:  162:        exit(EXIT_FAILURE);
+        -:  163:    }
+        -:  164:
+        -:  165:    //IP Address 
+        -:  166:    struct sockaddr_in server_info, client_info; // declaring a sockaddr_in in structure
+        -:  167:    
+    #####:  168:    int ServerAddrLen = sizeof(server_info);
+    #####:  169:    int ClientAddrLen = sizeof(client_info);
+        -:  170:	
+        -:  171:	//memset() used to fill block of memory with a particular value
+    #####:  172:    memset(&server_info, 0, ServerAddrLen);
+    #####:  173:    memset(&client_info, 0, ClientAddrLen);
+        -:  174:    
+        -:  175:    //Socket information
+    #####:  176:    server_info.sin_family = PF_INET; //info to which family it belongs (IPV4)
+    #####:  177:    server_info.sin_addr.s_addr = INADDR_ANY;  //address creation
+    #####:  178:    server_info.sin_port = htons(PORT);  //port address creation
+        -:  179:
+        -:  180:    //Bind and Listen system calls
+    #####:  181:    bind(server_sockfd, (struct sockaddr *)&server_info, ServerAddrLen);
+    #####:  182:    listen(server_sockfd, MAX_CLIENTS);
+        -:  183:
+        -:  184: 	//To print server IP
+    #####:  185:    getsockname(server_sockfd, (struct sockaddr*) &server_info, (socklen_t*) &ServerAddrLen);
+        -:  186:       
+    #####:  187:    printf("Start Server on: %s:%d\n", inet_ntoa(server_info.sin_addr), ntohs(server_info.sin_port));
+        -:  188:
+        -:  189:    // Initial linked list for clients
+    #####:  190:    root = newNode(server_sockfd, inet_ntoa(server_info.sin_addr));
+    #####:  191:    now = root;
+        -:  192:
+        -:  193:    while (1) 
+    #####:  194:    {
+    #####:  195:        client_sockfd = accept(server_sockfd, (struct sockaddr*) &client_info, (socklen_t*) &ClientAddrLen);
+        -:  196:		
+        -:  197:        // Print Client IP
+    #####:  198:        getpeername(client_sockfd, (struct sockaddr*) &client_info, (socklen_t*) &ClientAddrLen);
+    #####:  199:        printf("Client %s:%d come in.\n", inet_ntoa(client_info.sin_addr), ntohs(client_info.sin_port));
+        -:  200:
+        -:  201:        // Append linked list for clients
+    #####:  202:        ClientList *c = newNode(client_sockfd, inet_ntoa(client_info.sin_addr));
+    #####:  203:        c->prev = now;
+    #####:  204:        now->link = c;
+    #####:  205:        now = c;
+        -:  206:
+        -:  207:		//condition to check if the thread created for client_handler 
+    #####:  208:  		if (pthread_create(&id, NULL, (void *)client_handler, (void *)c) != 0) 
+        -:  209:  		{
+    #####:  210:            perror("Create pthread error!\n");
+    #####:  211:            exit(EXIT_FAILURE);
+        -:  212:        }
+        -:  213:    }
+        -:  214:   return 0;
+        -:  215:}
