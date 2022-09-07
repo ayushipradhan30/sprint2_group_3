@@ -12,9 +12,9 @@ char pass[20] = MEET_PASSWORD;
 int login_menu()
 {
 	int choice;//variable to get choice from the user
-    system("clear");
+    	system("clear");
 
-    //Label for client
+    	//Label for client
    	client:
 		//display admin panel.
     	printf("\n\t\t\t****************\n");
