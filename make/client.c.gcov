@@ -1,0 +1,190 @@
+        -:    0:Source:../src/client.c
+        -:    0:Source is newer than graph
+        -:    1:/*creating TCP socket for client side and using various system calls like send(), connect(),  close() to connect to the server */
+        -:    2: 
+        -:    3://including header files for this particular code
+        -:    4:#include <../inc/proto.h>
+        -:    5:#include <../inc/client.h>
+        -:    6:
+        -:    7:// Global variables
+        -:    8:volatile sig_atomic_t flag = 0;//flag for client availability
+        -:    9:int sockfd = 0;//socket number
+        -:   10:char username[LENGTH_NAME] = {};//username
+        -:   11:
+        -:   12:/*Function names are lower_case. Opening braces on the next line*/
+        -:   13:
+        -:   14://to remove extra whitespaces 
+        2:   15:void str_trim_lf (char* arr, int length) 
+        -:   16:{
+        2:   17:    int i;
+        2:   18:    for (i = 0; i < length; i++) 
+        -:   19:    {
+        -:   20:        if (arr[i] == '\n') 
+        2:   21:        {
+        -:   22:            arr[i] = '\0';
+        2:   23:            break;
+        2:   24:        }
+        4:   25:    }
+        -:   26:}  
+        -:   27:
+        2:   28:
+        2:   29:/*Exit function*/
+        2:   30:void catch_ctrl_c_and_exit(int sig) 
+        2:   31:{
+    #####:   32:    flag = 1;
+    #####:   33:}
+        -:   34:
+    #####:   35:/*Functionn for receiving message*/
+        -:   36:void recv_msg_handler() 
+        -:   37:{
+    #####:   38:    char receiveMessage[LENGTH_SEND] = {0};//receive message
+        -:   39:    while (1) {
+        -:   40:        int receive = recv(sockfd, receiveMessage, LENGTH_SEND, 0);//receive function returns integer value
+        2:   41:        
+        -:   42:        /*checking if message received successfully*/
+        2:   43:        if (receive > 0) {
+        -:   44:            printf("\r%s\n", receiveMessage);
+        -:   45:            printf("\r%s", "> ");
+        -:   46:            fflush(stdout);
+        -:   47:        } else if (receive == 0) {
+        2:   48:            break;
+        2:   49:        } else { 
+       2*:   50:            perror("Fatal Error.\n");
+        -:   51:        }//end of else
+    #####:   52:    }//end of while
+    #####:   53:}
+    #####:   54:
+    #####:   55:/*Function for sending message*/
+        -:   56:void send_msg_handler() 
+    #####:   57:{
+        -:   58:    char message[LENGTH_MSG] = {0};
+        -:   59:    
+    #####:   60:    /*checking if message sent successfully*/
+    #####:   61:    while (1) 
+    #####:   62:    {
+        -:   63:       printf("\r%s", "> ");
+        -:   64:       fflush(stdout);
+    #####:   65:        while (fgets(message, LENGTH_MSG, stdin) != NULL) 
+    #####:   66:        {
+        -:   67:            str_trim_lf(message, LENGTH_MSG);
+        -:   68:            if (strlen(message) == 0) {
+        2:   69:                printf("\r%s", "> ");
+        -:   70:                fflush(stdout);
+        -:   71:            } else {
+        -:   72:                break;
+        -:   73:            }
+        -:   74:        }//end of while
+        -:   75:        send(sockfd, message, LENGTH_MSG, 0);
+        2:   76:        if (strcmp(message, "exit") == 0) {
+    #####:   77:            break;
+        -:   78:        }//end of if
+        -:   79:    }//end of while
+        -:   80:    catch_ctrl_c_and_exit(EXIT_SUCCESS);
+        -:   81:}
+        2:   82:
+        -:   83:/* Main function for client*/
+        -:   84:int main()
+        2:   85:{   	
+        2:   86:	//Thread declarations
+        2:   87:	pthread_t recv_msg_thread;
+        -:   88:	pthread_t send_msg_thread;
+        2:   89:	
+        -:   90:	/*Login function*/
+        2:   91:    if(!login()){
+        -:   92:        	printf("Successfully Logout\n\n");
+    #####:   93:   	} 
+    #####:   94:	
+        -:   95:	//if the login is successful
+        -:   96:    else{
+        2:   97:		signal(SIGINT, catch_ctrl_c_and_exit); //sigint to stop the current process and return to its main loop 
+        -:   98:
+        -:   99:		// Naming
+        2:  100:		printf("Please enter your name: ");
+        -:  101:		getchar(); 
+    #####:  102:		if (fgets(username, LENGTH_NAME, stdin) != NULL) 
+    #####:  103:		{
+        -:  104:		    str_trim_lf(username, LENGTH_NAME);
+        -:  105:		}
+        -:  106:		if (strlen(username) < MINIMUM_USERNAME || strlen(username) >= LENGTH_NAME-1) 
+        -:  107:		{
+        2:  108:		    printf("\nName must be more than one and less than thirty characters.\n");
+        2:  109:		    exit(EXIT_FAILURE);
+        -:  110:		}
+        -:  111:		//Creating socket for client side
+        -:  112:		sockfd = socket(AF_INET , SOCK_STREAM , 0);//
+        2:  113:		
+        2:  114:		//Checking condition for socket creation
+        -:  115:		if (sockfd < 0)
+        -:  116:		{
+        2:  117:		    perror("Fail to create a socket.");  //error condition
+        2:  118:		    exit(EXIT_FAILURE);
+        2:  119:		}
+        -:  120:
+        -:  121:		// Socket information
+        2:  122:		struct sockaddr_in server_info, client_info; // declaring a sockaddr_in in structure.
+        2:  123:		int ServerAddrLen = sizeof(server_info);
+        -:  124:		int ClientAddrLen = sizeof(client_info);
+    #####:  125:		
+    #####:  126:		//memset() used to fill block of memory with a particular value    
+        -:  127:		//function fills the first ServerAddrLen(size) bytes of the memory area pointed to by server_info with the 0.
+        -:  128:		memset(&server_info, 0, ServerAddrLen); 
+        -:  129:		memset(&client_info, 0, ClientAddrLen);
+        2:  130:		
+        2:  131:		//server information
+        -:  132:		server_info.sin_family = PF_INET;  
+        -:  133:		server_info.sin_addr.s_addr = inet_addr(IP); 
+        2:  134:		server_info.sin_port = htons(PORT); 
+        2:  135:
+        -:  136:		// Connect to Server
+        -:  137:		int err = connect(sockfd, (struct sockaddr *)&server_info, ServerAddrLen);
+        2:  138:		if (err < 0) 
+        -:  139:		{
+    #####:  140:		    perror("Connection to Server error!\n");
+    #####:  141:		    exit(EXIT_FAILURE);
+        -:  142:		}
+        -:  143:		
+        -:  144:		//Functions used to get names of current client and server
+        2:  145:		getsockname(sockfd, (struct sockaddr*) &client_info, (socklen_t*) &ClientAddrLen);
+        -:  146:		getpeername(sockfd, (struct sockaddr*) &server_info, (socklen_t*) &ServerAddrLen);
+    #####:  147:		
+    #####:  148:		//Printing messages to inform user if connection established
+        -:  149:		printf("Connect to Server: %s:%d\n", inet_ntoa(server_info.sin_addr), ntohs(server_info.sin_port));
+        -:  150:		printf("You are: %s:%d\n", inet_ntoa(client_info.sin_addr), ntohs(client_info.sin_port));
+        -:  151:
+        -:  152:		//condition to check if message sent successfully
+        2:  153:		if(send(sockfd, username, LENGTH_NAME, 0) < 0)
+        -:  154:		{
+    #####:  155:			perror("Send function failed.\n");
+    #####:  156:			exit(EXIT_FAILURE);
+        -:  157:		}
+        -:  158:		
+        -:  159:		//creating a thread for sending message
+        -:  160:		if (pthread_create(&send_msg_thread, NULL, (void *) send_msg_handler, NULL) != 0) 
+        -:  161:		{
+        -:  162:		    perror("Create pthread error!\n");
+16668422592:  163:		   	pthread_exit(&send_msg_thread);
+        -:  164:		    exit(EXIT_FAILURE);
+        2:  165:		}
+        2:  166:		
+        2:  167:		//creating a thread for receiving message
+        -:  168:		if (pthread_create(&recv_msg_thread, NULL, (void *) recv_msg_handler, NULL) != 0) 
+        -:  169:		{
+        2:  170:		    perror("Create pthread error!\n");
+        -:  171:		    pthread_exit(&recv_msg_thread);
+        2:  172:		    exit(EXIT_FAILURE);
+        -:  173:		}
+        -:  174:		
+        -:  175:		/*condition to check if the user exist*/
+        -:  176:		while (1) 
+        -:  177:		{
+        -:  178:		    if(flag) 
+        -:  179:		    {
+        -:  180:		        printf("\nBye\n");
+        -:  181:		        printf("Successfully Logout\n\n");
+        -:  182:		        break;
+        -:  183:		    }
+        -:  184:		}//end of while
+        -:  185:		close(sockfd);//closing socket 
+        -:  186:	}//end of else
+        -:  187:	return 0;
+        -:  188:}

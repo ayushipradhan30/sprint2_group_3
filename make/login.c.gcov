@@ -1,0 +1,98 @@
+        -:    0:Source:../src/login.c
+        -:    1:/*Client Login*/
+        -:    2://including header files
+        -:    3:#include <stdio.h>
+        -:    4:#include <stdlib.h>
+        -:    5:#include <string.h>
+        -:    6:#include <unistd.h>
+        -:    7:#include <../inc/proto.h>
+        -:    8:
+        -:    9://assigning the pre-defined password to admin for login
+        -:   10:char pass[20] = MEET_PASSWORD;
+        -:   11:
+        2:   12:int login_menu()
+        -:   13:{
+        -:   14:	int choice;//variable to get choice from the user
+        2:   15:    system("clear");
+        -:   16:
+        -:   17:    //Label for client
+        2:   18:   	client:
+        -:   19:		//display admin panel.
+        2:   20:    	printf("\n\t\t\t****************\n");
+        2:   21:    	printf("\n\t\t\t|    ---     !! Chat Room !!     ---        |\n");
+        2:   22:    	printf("\n\n\t\t[1] Enter Chat Box\n\t\t[2] Exit\n\n\n\t\t Enter your choice:");
+        -:   23:
+        2:   24:    	scanf("%d", &choice);//Enter the user choice:
+        -:   25:
+        -:   26:    	//start switch_cases:
+        2:   27:    	switch(choice)
+        -:   28:    	{
+        -:   29:			//To get enter chat room
+        2:   30:    		case 1:
+        2:   31:				return 1;
+        -:   32:			//To exit from the program
+    #####:   33:    		case 2:
+    #####:   34:        		return 0;
+    #####:   35:        	default:
+    #####:   36:        		printf("Please enter the correct option!");
+    #####:   37:        	goto client;
+        -:   38:    	}
+        -:   39:    	
+        -:   40:}
+        -:   41:
+        -:   42://Function to login 
+        2:   43:int login()
+        -:   44:{
+        2:   45:    int attempt = 6;//number of attempts
+        -:   46:	char client_room[10];//variable to store meeting room name
+        -:   47:	
+        2:   48:	label:
+        2:   49:    	system("clear");
+        -:   50:
+        2:   51:    	printf("\n\t\t\t->> Welcome to ChatRoom\n\t\t\t Enter your Meeting name: ");
+        2:   52:    	scanf("%s", client_room);
+        -:   53:
+        -:   54:		//If meeting name entered incorrect:
+        2:   55: 		if(strcmp(client_room, MEETING_NAME) != 0)
+        -:   56:    	{
+        -:   57:        	
+    #####:   58:        	getchar();
+    #####:   59:        	printf("Wrong Meeting name!, please try again\n\n");
+    #####:   60:       	 	getchar();
+    #####:   61:        	goto label;
+        -:   62:    	}
+        -:   63:    	
+        -:   64:    	//if username entered is correct
+        -:   65:    	else
+        -:   66:    	{
+        -:   67:       		char user_pass[PASSWORD_LENGTH]; //variable to store password of meeting
+        -:   68:    	
+        2:   69:			label2:
+        2:   70:		    	printf("\n\t\t\t>> Type password: ");
+        2:   71:		    	scanf("%s", user_pass);
+        -:   72:
+        -:   73:		    	//if password entered is incorrect.
+        2:   74:		    	if(strcmp(user_pass, pass) != 0)
+        -:   75:		    	{
+    #####:   76:		        	attempt--;
+        -:   77:					//if password is entered incorrect for 5 times
+    #####:   78:		        	if(attempt == 0)
+        -:   79:					{
+    #####:   80:				    	getchar();
+    #####:   81:				    	printf("\n\n");
+        -:   82:				    
+    #####:   83:				    	perror("Too many wrong password ....");
+    #####:   84:				    	getchar();
+    #####:   85:				    	exit(EXIT_FAILURE);
+        -:   86:					}
+    #####:   87:					printf("\n\t\t\t->>> Wrong password .login attempt remaining %d", attempt);
+    #####:   88:		       	 	printf("\n\n");
+    #####:   89:		        	getchar();
+    #####:   90:		        	goto label2;
+        -:   91:        		}//end of if
+        -:   92:        		else
+        -:   93:        		{
+        2:   94:            		return login_menu();//redirect to the main account:
+        -:   95:        		}
+        -:   96:    	}//end of else
+        -:   97:}
