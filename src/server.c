@@ -36,6 +36,7 @@ ClientList *newNode(int sockfd, char* ip)
     strncpy(np->name, "NULL", LENGTH_NAME);//copies name to the node
     return np;
 }
+
 // Global variables
 int server_sockfd = 0, client_sockfd = 0;
 ClientList *root, *now;
