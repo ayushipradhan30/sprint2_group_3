@@ -1,1 +1,1 @@
-# sprint2_group_3
+Chat application in C
